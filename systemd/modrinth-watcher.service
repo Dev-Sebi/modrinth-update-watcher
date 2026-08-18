@@ -1,0 +1,9 @@
+[Unit]
+Description=Modrinth account watcher
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=%h/git/scripts/modrinth-watcher
+ExecStart=/usr/bin/node %h/git/scripts/modrinth-watcher/src/index.js --once

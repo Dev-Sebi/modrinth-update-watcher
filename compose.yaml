@@ -1,0 +1,15 @@
+services:
+  modrinth-watcher:
+    build: .
+    container_name: modrinth-watcher
+    env_file: .env
+    environment:
+      StateFile: /data/state.json
+    volumes:
+      # Named volume, so the container's non-root user owns it. Swap for "./data:/data"
+      # only after creating that folder yourself with `mkdir -p data`.
+      - watcher-data:/data
+    restart: unless-stopped
+
+volumes:
+  watcher-data:
