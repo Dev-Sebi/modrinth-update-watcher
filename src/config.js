@@ -63,8 +63,7 @@ function loadConfig() {
   const accountLink = readSetting(settings, "AccountLink");
   const discordWebhook = readSetting(settings, "DiscordWebhook");
 
-  if (apiKey === "") fail("ApiKey is missing. Copy .env.example to .env and fill it in.");
-  if (accountLink === "") fail("AccountLink is missing.");
+  if (accountLink === "") fail("AccountLink is missing. Copy .env.example to .env and fill it in.");
   if (discordWebhook === "") fail("DiscordWebhook is missing.");
   if (!WEBHOOK_PATTERN.test(discordWebhook)) {
     fail("DiscordWebhook does not look like a Discord webhook URL.");

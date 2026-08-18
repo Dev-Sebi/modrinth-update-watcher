@@ -16,11 +16,11 @@ npm install
 cp .env.example .env
 ```
 
-Fill in `.env`:
+Fill in `.env`. Only `AccountLink` and `DiscordWebhook` are required:
 
 | Key | Meaning |
 | --- | --- |
-| `ApiKey` | Modrinth personal access token from <https://modrinth.com/settings/pats>. Read scopes are enough. |
+| `ApiKey` | Optional. Public profiles need no token, so it can stay empty. Only add one (from <https://modrinth.com/settings/pats>, read scopes) to also see draft, unlisted or private projects. |
 | `AccountLink` | Profile link, username or user id. Several accounts can be separated by commas. |
 | `DiscordWebhook` | Channel webhook URL (Channel settings → Integrations → Webhooks). |
 | `PollMinutes` | Optional, defaults to `15`. |

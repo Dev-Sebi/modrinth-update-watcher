@@ -3,15 +3,19 @@ import { config } from "./config.js";
 
 const MAX_RATE_LIMIT_WAIT_SECONDS = 120;
 
+const headers = {
+  "User-Agent": config.userAgent,
+  Accept: "application/json",
+};
+
+// Public profiles need no token, so the header is only sent when one was configured.
+if (config.apiKey !== "") headers.Authorization = config.apiKey;
+
 // Created once at module load; a client per request would leak sockets over weeks of uptime.
 const api = axios.create({
   baseURL: "https://api.modrinth.com/v2",
   timeout: 15000,
-  headers: {
-    Authorization: config.apiKey,
-    "User-Agent": config.userAgent,
-    Accept: "application/json",
-  },
+  headers,
 });
 
 function sleep(ms) {
