@@ -6,6 +6,9 @@ Watches one or more Modrinth accounts and posts an embed to a Discord webhook wh
 - a new project is published
 - a project passes a download or follower milestone
 
+Every embed carries the project icon, the author's avatar, emoji-labelled fields and a direct
+`View on Modrinth` link, plus the download link for new versions.
+
 It is a plain script, not a Discord bot. Modrinth has no webhook or event API, so the watcher polls
 (every 15 minutes by default).
 

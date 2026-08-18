@@ -8,6 +8,21 @@ const COLORS = {
   info: 0x8b8b8b,
 };
 
+const PROJECT_TYPE_EMOJI = {
+  mod: "🧩",
+  modpack: "📦",
+  resourcepack: "🎨",
+  shader: "🌈",
+  datapack: "📜",
+  plugin: "🔌",
+};
+
+const VERSION_TYPE_EMOJI = {
+  release: "✅",
+  beta: "🧪",
+  alpha: "⚗️",
+};
+
 const EMBEDS_PER_MESSAGE = 10;
 // Discord counts every embed in a message against one 6000 character budget.
 const CHARS_PER_MESSAGE = 5800;
@@ -56,6 +71,18 @@ function projectUrl(project) {
   return `https://modrinth.com/project/${project.slug ?? project.id}`;
 }
 
+function projectEmoji(project) {
+  return PROJECT_TYPE_EMOJI[project.project_type] ?? "📁";
+}
+
+function versionEmoji(version) {
+  return VERSION_TYPE_EMOJI[version.version_type] ?? "✅";
+}
+
+function modrinthLink(project) {
+  return `🔗 [View on Modrinth](${projectUrl(project)})`;
+}
+
 function baseEmbed(user, color) {
   return {
     color,
@@ -69,6 +96,12 @@ function baseEmbed(user, color) {
   };
 }
 
+// Projects without an icon still look complete with the author's avatar.
+function embedIcon(project, user) {
+  const url = project.icon_url || user.avatar_url;
+  return url ? { url } : undefined;
+}
+
 function primaryFile(version) {
   const files = Array.isArray(version.files) ? version.files : [];
   return files.find((file) => file.primary) ?? files[0];
@@ -79,21 +112,22 @@ export function buildVersionEmbed(user, project, version) {
   const pageUrl = `${projectUrl(project)}/version/${version.id}`;
 
   const parts = [];
-  if (version.changelog) parts.push(truncate(version.changelog, 1000));
-  if (file?.url) parts.push(`[Download ${file.filename}](${file.url})`);
-  else parts.push(`[Open on Modrinth](${pageUrl})`);
+  if (version.changelog) parts.push(`📝 **What changed**\n${truncate(version.changelog, 1000)}`);
+  const links = [modrinthLink(project)];
+  if (file?.url) links.push(`⬇️ [Download ${file.filename}](${file.url})`);
+  parts.push(links.join("\n"));
 
   return {
     ...baseEmbed(user, COLORS.version),
-    title: truncate(`${project.title} ${version.version_number}`, 256),
+    title: truncate(`🚀 ${project.title} ${version.version_number}`, 256),
     url: pageUrl,
     description: truncate(parts.join("\n\n"), 4096),
-    thumbnail: project.icon_url ? { url: project.icon_url } : undefined,
+    thumbnail: embedIcon(project, user),
     fields: [
-      { name: "Release type", value: capitalize(version.version_type ?? "release"), inline: true },
-      { name: "Loaders", value: truncate(listOrDash(version.loaders), 1024), inline: true },
-      { name: "Game versions", value: truncate(listOrDash(version.game_versions), 1024), inline: true },
-      { name: "File size", value: formatBytes(file?.size), inline: true },
+      { name: "🏷️ Release type", value: `${versionEmoji(version)} ${capitalize(version.version_type ?? "release")}`, inline: true },
+      { name: "🔧 Loaders", value: truncate(listOrDash(version.loaders), 1024), inline: true },
+      { name: "🎮 Game versions", value: truncate(listOrDash(version.game_versions), 1024), inline: true },
+      { name: "📦 File size", value: formatBytes(file?.size), inline: true },
     ],
   };
 }
@@ -102,64 +136,80 @@ export function buildVersionEmbed(user, project, version) {
 export function buildVersionSummaryEmbed(user, project, versions) {
   const lines = versions
     .slice(0, 15)
-    .map((version) => `• [${version.version_number}](${projectUrl(project)}/version/${version.id}) — ${capitalize(version.version_type ?? "release")}`);
-  if (versions.length > lines.length) lines.push(`• …and ${versions.length - lines.length} more`);
+    .map((version) => `${versionEmoji(version)} [${version.version_number}](${projectUrl(project)}/version/${version.id})`);
+  if (versions.length > lines.length) lines.push(`…and ${versions.length - lines.length} more`);
+  lines.push("", modrinthLink(project));
 
   return {
     ...baseEmbed(user, COLORS.version),
-    title: truncate(`${project.title} — ${versions.length} new versions`, 256),
+    title: truncate(`🚀 ${project.title} — ${versions.length} new versions`, 256),
     url: projectUrl(project),
     description: truncate(lines.join("\n"), 4096),
-    thumbnail: project.icon_url ? { url: project.icon_url } : undefined,
+    thumbnail: embedIcon(project, user),
   };
 }
 
 export function buildProjectEmbed(user, project) {
   const gallery = Array.isArray(project.gallery) ? project.gallery : [];
   const featured = gallery.find((image) => image.featured) ?? gallery[0];
+  const description = [truncate(project.description, 3500), modrinthLink(project)].filter(Boolean).join("\n\n");
 
   return {
     ...baseEmbed(user, COLORS.project),
-    title: truncate(`New ${project.project_type ?? "project"}: ${project.title}`, 256),
+    title: truncate(`✨ New ${project.project_type ?? "project"}: ${project.title}`, 256),
     url: projectUrl(project),
-    description: truncate(project.description, 4096),
-    thumbnail: project.icon_url ? { url: project.icon_url } : undefined,
+    description: truncate(description, 4096),
+    thumbnail: embedIcon(project, user),
     image: featured?.url ? { url: featured.url } : undefined,
     fields: [
-      { name: "Type", value: capitalize(project.project_type ?? "unknown"), inline: true },
-      { name: "Categories", value: truncate(listOrDash(project.categories), 1024), inline: true },
-      { name: "Sides", value: `Client: ${capitalize(project.client_side ?? "unknown")}\nServer: ${capitalize(project.server_side ?? "unknown")}`, inline: true },
+      { name: "🏷️ Type", value: `${projectEmoji(project)} ${capitalize(project.project_type ?? "unknown")}`, inline: true },
+      { name: "📂 Categories", value: truncate(listOrDash(project.categories), 1024), inline: true },
+      { name: "💻 Sides", value: `Client: ${capitalize(project.client_side ?? "unknown")}\nServer: ${capitalize(project.server_side ?? "unknown")}`, inline: true },
     ],
   };
 }
 
 export function buildMilestoneEmbed(user, project, kind, value) {
   const label = kind === "downloads" ? "downloads" : "followers";
+  const emoji = kind === "downloads" ? "⬇️" : "❤️";
 
   return {
     ...baseEmbed(user, COLORS.milestone),
     title: truncate(`🎉 ${project.title} passed ${formatNumber(value)} ${label}`, 256),
     url: projectUrl(project),
-    thumbnail: project.icon_url ? { url: project.icon_url } : undefined,
+    description: modrinthLink(project),
+    thumbnail: embedIcon(project, user),
     fields: [
-      { name: "Downloads", value: formatNumber(project.downloads), inline: true },
-      { name: "Followers", value: formatNumber(project.followers), inline: true },
+      { name: "⬇️ Downloads", value: formatNumber(project.downloads), inline: true },
+      { name: "❤️ Followers", value: formatNumber(project.followers), inline: true },
+      { name: "🏆 Milestone", value: `${emoji} ${formatNumber(value)}`, inline: true },
     ],
   };
 }
 
 export function buildWatchStartEmbed(user, projects) {
   const totalDownloads = projects.reduce((sum, project) => sum + (project.downloads ?? 0), 0);
+  const profileUrl = `https://modrinth.com/user/${user.username}`;
+  const list = projects
+    .slice(0, 10)
+    .map((project) => `${projectEmoji(project)} [${project.title}](${projectUrl(project)})`);
+  if (projects.length > list.length) list.push(`…and ${projects.length - list.length} more`);
+
+  const description = [
+    "New releases, new projects and milestones will show up here.",
+    list.join("\n"),
+    `🔗 [View profile on Modrinth](${profileUrl})`,
+  ].filter((part) => part !== "").join("\n\n");
 
   return {
     ...baseEmbed(user, COLORS.info),
-    title: truncate(`Now watching ${user.username}`, 256),
-    url: `https://modrinth.com/user/${user.username}`,
-    description: "Future releases, new projects and milestones will show up here.",
+    title: truncate(`👀 Now watching ${user.username}`, 256),
+    url: profileUrl,
+    description: truncate(description, 4096),
     thumbnail: user.avatar_url ? { url: user.avatar_url } : undefined,
     fields: [
-      { name: "Projects", value: formatNumber(projects.length), inline: true },
-      { name: "Total downloads", value: formatNumber(totalDownloads), inline: true },
+      { name: "📁 Projects", value: formatNumber(projects.length), inline: true },
+      { name: "⬇️ Total downloads", value: formatNumber(totalDownloads), inline: true },
     ],
   };
 }
